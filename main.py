@@ -48,21 +48,53 @@ def root():
     return {"message": "🌱 Plant Water Prediction API is running!"}
 
 
+# @app.post("/predict")
+# def predict(data: SensorData):
+#     try:
+#         # Convert input data to model format
+#         features = np.array([[data.temperature, data.humidity, data.light_intensity, data.soil_moisture]])
+
+#         # Make prediction
+#         prediction = model.predict(features)[0]
+
+#         # Save to MongoDB
+#         record = data.dict()
+#         record["needs_water"] = bool(prediction)
+#         collection.insert_one(record)
+#         proba = model.predict_proba(features)[0][1]
+#         return {"prediction": "Needs Water" if prediction == 1 else "No Water Needed", "confidence": round(float(proba), 3)}
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 @app.post("/predict")
 def predict(data: SensorData):
     try:
-        # Convert input data to model format
-        features = np.array([[data.temperature, data.humidity, data.light_intensity, data.soil_moisture]])
+        # ✅ Convert input data to numeric format (ensure soil_moisture is float)
+        features = np.array([
+            [float(data.temperature), float(data.humidity), float(data.light_intensity), float(data.soil_moisture)]
+        ])
 
-        # Make prediction
-        prediction = model.predict(features)[0]
+        # ✅ Make prediction safely
+        prediction = int(model.predict(features)[0])
 
-        # Save to MongoDB
+        # ✅ Compute confidence (if model supports it)
+        confidence = (
+            float(model.predict_proba(features)[0][1])
+            if hasattr(model, "predict_proba")
+            else 0.85  # fallback confidence
+        )
+
+        # ✅ Save to MongoDB
         record = data.dict()
         record["needs_water"] = bool(prediction)
+        record["confidence"] = confidence
         collection.insert_one(record)
-        proba = model.predict_proba(features)[0][1]
-        return {"prediction": "Needs Water" if prediction == 1 else "No Water Needed", "confidence": round(float(proba), 3)}
+
+        # ✅ Return proper JSON for frontend
+        return {
+            "prediction": "Needs Water" if prediction == 1 else "No Water Needed",
+            "confidence": round(confidence, 3),
+        }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
