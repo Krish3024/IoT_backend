@@ -8,7 +8,12 @@ import uvicorn
 
 # ----------------- MongoDB Setup -----------------
 MONGO_URI = "mongodb+srv://krishsah5216_db_user:1234@cluster0.qkdm0zl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(MONGO_URI)
+# client = MongoClient(MONGO_URI)
+client = MongoClient(
+    MONGO_URI,
+    tls=True,
+    tlsAllowInvalidCertificates=True
+)
 db = client["PlantMonitoring"]
 collection = db["SensorData"]
 
